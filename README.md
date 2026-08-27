@@ -169,6 +169,73 @@ Each voucher item follows the assignment’s normalized contract.
 8. The API returns the import summary and the normalized voucher list.
 9. Duplicate exact bytes return the original import instead of creating a second import record.
 
+## Application Flow Diagram
+
+```mermaid
+flowchart TD
+    A["📤 XML File Upload<br/>Multipart Form-Data"] -->|POST /api/tally/imports| B["✅ Receive Request<br/>Validate File"]
+    
+    B -->|File Valid| C["📖 Read Raw Bytes<br/>Preserve Exact Content"]
+    B -->|File Invalid| Z1["❌ Return 400<br/>Invalid Request"]
+    
+    C --> D["🔐 Compute SHA-256 Hash<br/>Content Identity"]
+    
+    D --> E{"🔍 Duplicate<br/>Check"}
+    E -->|Already Exists| F["📋 Return 200<br/>Original Import ID"]
+    E -->|New Content| G["🔤 Detect Encoding"]
+    
+    G --> H["🧹 Sanitize Illegal<br/>XML References"]
+    
+    H --> I{"📄 Parse Root<br/>Element"}
+    I -->|ENVELOPE| J["💰 Voucher Export<br/>Document Type"]
+    I -->|RESPONSE| K["📊 Tally Response<br/>Document Type"]
+    I -->|Unknown| Z2["❌ Return 400<br/>Invalid Root"]
+    
+    J --> L["⚙️ Normalize Data<br/>Parent-Child Ownership"]
+    K --> L
+    
+    L --> M["📦 Preserve Order<br/>Repeated Lists & Allocations"]
+    
+    M --> N["💵 Keep Values as Strings<br/>No Binary Conversion"]
+    
+    N --> O["💾 Save to Database<br/>Import & Voucher Records"]
+    
+    O --> P["📊 Generate Summary<br/>Counts & Metadata"]
+    
+    P --> Q["✨ Return 201<br/>Import Complete"]
+    
+    Q --> R["🎯 Response with<br/>Import ID & Summary"]
+    
+    Z1 --> Z["Return Error"]
+    Z2 --> Z
+    F --> Z
+    R --> END["✅ Success"]
+    Z --> END
+    
+    style A fill:#2563eb,stroke:#1e40af,stroke-width:2px,color:#fff
+    style B fill:#3b82f6,stroke:#1e40af,stroke-width:2px,color:#fff
+    style C fill:#60a5fa,stroke:#1e40af,stroke-width:2px,color:#fff
+    style D fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
+    style E fill:#06b6d4,stroke:#0891b2,stroke-width:2px,color:#fff
+    style F fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    style G fill:#60a5fa,stroke:#1e40af,stroke-width:2px,color:#fff
+    style H fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:#fff
+    style I fill:#06b6d4,stroke:#0891b2,stroke-width:2px,color:#fff
+    style J fill:#ec4899,stroke:#be185d,stroke-width:2px,color:#fff
+    style K fill:#f43f5e,stroke:#be185d,stroke-width:2px,color:#fff
+    style L fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:#fff
+    style M fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:#fff
+    style N fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:#fff
+    style O fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    style P fill:#06b6d4,stroke:#0891b2,stroke-width:2px,color:#fff
+    style Q fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    style R fill:#06b6d4,stroke:#0891b2,stroke-width:2px,color:#fff
+    style Z1 fill:#ef4444,stroke:#991b1b,stroke-width:2px,color:#fff
+    style Z2 fill:#ef4444,stroke:#991b1b,stroke-width:2px,color:#fff
+    style Z fill:#ef4444,stroke:#991b1b,stroke-width:2px,color:#fff
+    style END fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+```
+
 Important integrity rules from the assignment:
 
 - preserve `ALLLEDGERENTRIES.LIST` vs `LEDGERENTRIES.LIST` using `sourceTag`
